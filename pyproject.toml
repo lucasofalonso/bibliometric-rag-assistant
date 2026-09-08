@@ -1,0 +1,28 @@
+[project]
+name = "bibliometric-rag-assistant"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Lucas", email = "lucasalonso@id.uff.br" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+bibliometric-rag-assistant = "bibliometric_rag_assistant:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "pytest>=9.1.1",
+    "ruff>=0.16.6",
+]

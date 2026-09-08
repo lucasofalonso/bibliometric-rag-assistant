@@ -1,0 +1,23 @@
+pubmed:
+  source: pubmed
+  status: provisional
+  active_variant: query_provisoria_atual
+  period:
+    start: "2000-01-01"
+    end: "2025-12-31"
+  sample_size: 20
+  variants:
+    query_provisoria_atual:
+      version: "0.1"
+      description: Combina indexação Mesh com termos livres em Title/Abstract
+      query: '( "Temporomandibular Joint"[Mesh] OR "temporomandibular joint"[Title/Abstract] ) AND ( "Joint Prosthesis"[Mesh] OR prosthe*[Title/Abstract] OR replacement[Title/Abstract] OR alloplastic[Title/Abstract] ) AND ( infection*[Title/Abstract] OR antibiotic*[Title/Abstract] OR prophylaxis[Title/Abstract] ) AND ( "2000/01/01"[Date - Publication] : "2025/12/31"[Date - Publication] )'
+
+    descrita_literalmente:
+      version: "0.1"
+      description: Termos em linguagem natural, sem Mesh nem campos de indexação
+      query: '( "temporomandibular joint" OR "temporomandibular replacement" OR TMJ OR TJR OR ETJA ) AND ( prosthesis OR replacement ) AND ( prevention OR prophylaxis OR "infection control" OR antibiotics OR detection ) AND ( "2000/01/01"[Date - Publication] : "2025/12/31"[Date - Publication] )'
+
+    descrita_com_campos:
+      version: "0.1"
+      description: Mesmos termos livres da variante literal, explicitados com [Title/Abstract]
+      query: '( "Temporomandibular Joint"[Mesh] OR "temporomandibular joint"[Title/Abstract] OR "temporomandibular replacement"[Title/Abstract] OR TMJ[Title/Abstract] OR TJR[Title/Abstract] OR ETJA[Title/Abstract] ) AND ( prosthesis[Title/Abstract] OR replacement[Title/Abstract] ) AND ( prevention[Title/Abstract] OR prophylaxis[Title/Abstract] OR "infection control"[Title/Abstract] OR antibiotics[Title/Abstract] OR detection[Title/Abstract] ) AND ( "2000/01/01"[Date - Publication] : "2025/12/31"[Date - Publication] )'
