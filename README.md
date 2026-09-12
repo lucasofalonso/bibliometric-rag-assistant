@@ -33,8 +33,8 @@ Current package modules:
 | Module | Responsibility |
 |---|---|
 | `bibliometric_rag_assistant.config` | Project root, `.env` loading, environment variables, output directory paths |
-| `bibliometric_rag_assistant.search_strategy` | Loads `configs/search_strategy.yaml` and resolves the active PubMed query |
-| `bibliometric_rag_assistant.ingestion.pubmed` | PubMed E-utilities client: `search_pubmed()`, `compare_queries()` |
+| `bibliometric_rag_assistant.search_strategy` | Loads `configs/search_strategy.yaml`, composes each query variant with the configured date range, and resolves the active PubMed query (`PUBMED_QUERY`, `PUBMED_QUERIES`) |
+| `bibliometric_rag_assistant.ingestion.pubmed` | PubMed E-utilities client: `search_pubmed()`, `fetch_pubmed_citations()`, `parse_pubmed_xml()`, `compare_queries()` |
 
 
 ## Reproducibility
@@ -86,5 +86,6 @@ uv run python -m ipykernel install --user --name bibliometric-rag-assistant
 
 Open `notebooks/01_api_tests.ipynb` and select the `bibliometric-rag-assistant`
 kernel. Running it top to bottom sends the PubMed search defined by the
-`active_variant` entry in `configs/search_strategy.yaml` and prints the raw
-E-utilities response.
+`active_variant` entry in `configs/search_strategy.yaml`, fetches the matching
+citations, and parses them into structured records (pmid, doi, title,
+abstract, authors, affiliations).
