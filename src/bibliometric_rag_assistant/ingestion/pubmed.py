@@ -1,3 +1,4 @@
+import atexit
 import re
 from xml.etree import ElementTree as ET
 
@@ -12,6 +13,8 @@ client = httpx.Client(
     follow_redirects=True,
     headers={"User-Agent": f"bibliometric-rag-assistant/0.1 ({NCBI_EMAIL})"},
 )
+
+atexit.register(client.close)
 
 
 def search_pubmed(query: str, limit: int = 20) -> dict:
