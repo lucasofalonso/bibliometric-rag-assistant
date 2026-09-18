@@ -13,6 +13,7 @@ modularized into an importable `src/bibliometric_rag_assistant` package.
 ## Table of contents
 
 - [About the project](#about-the-project)
+  - [Agents experiment](#agents-experiment)
 - [Reproducibility](#reproducibility)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
@@ -35,6 +36,27 @@ Current package modules:
 | `bibliometric_rag_assistant.config` | Project root, `.env` loading, environment variables, output directory paths |
 | `bibliometric_rag_assistant.search_strategy` | Loads `configs/search_strategy.yaml`, composes each query variant with the configured date range, and resolves the active PubMed query (`PUBMED_QUERY`, `PUBMED_QUERIES`) |
 | `bibliometric_rag_assistant.ingestion.pubmed` | PubMed E-utilities client: `search_pubmed()`, `fetch_pubmed_citations()`, `parse_pubmed_xml()`, `compare_queries()` |
+
+A SQLite persistence layer is being prototyped in `src/db.ipynb` (`ingestion_runs`,
+`raw_snapshots`, and `citations` tables, with `connect_database()`,
+`create_tables()`, `insert_ingestion_run()`, `insert_raw_snapshot()`, and
+`insert_citations()`) and will be modularized into `bibliometric_rag_assistant.db`
+next.
+
+### Agents experiment
+
+`experiments/agents/etapa_0/00_pubmed_tool_loop.ipynb` is a hands-on study of
+tool-calling agents, kept outside the importable package on purpose. It exposes
+`search_pubmed` as a single read-only tool to an OpenAI model through a
+hand-written agentic loop (no framework, no SDK-provided tool runner), capped at
+two tool calls per run. Each run logs which tool was chosen, its arguments, a
+summary of the result, and why the loop stopped (`end_turn` vs. `max_tool_calls`).
+
+It's tested against three known questions: two that should make the agent call
+`search_pubmed`, and one deliberately unrelated to PubMed ("What is the capital
+of France?") to confirm the agent also knows when *not* to call a tool. This
+experiment is the first step toward the project's intended end product: an
+agentic RAG assistant over the collected literature.
 
 
 ## Reproducibility
@@ -71,6 +93,7 @@ Then fill in `.env`:
 | `NCBI_API_KEY` | No | Raises the PubMed E-utilities rate limit when set. |
 | `OPENALEX_API_KEY` | No | Reserved for future OpenAlex ingestion. |
 | `CROSSREF_MAILTO` | No | Reserved for future Crossref ingestion (polite pool). |
+| `OPENAI_API_KEY` | No | Only needed to run the agents experiment (`experiments/agents/etapa_0/00_pubmed_tool_loop.ipynb`). |
 
 Output directories (`data/raw/pubmed`, `data/raw/crossref`, `data/raw/openalex`,
 `data/interim`) are created automatically the first time
