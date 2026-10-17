@@ -1,6 +1,6 @@
-"""Ingere uma amostra do PubMed e grava no banco SQLite local.
+"""Ingest a PubMed sample and store it in the local SQLite database.
 
-Uso:
+Usage:
     uv run python scripts/ingest_sample.py
 """
 
@@ -34,7 +34,7 @@ def ingest_sample(
     db_path: str | Path = DB_PATH,
     raw_dir: Path = RAW_PUBMED_DIR,
 ) -> dict:
-    # Configuração
+    # Setup
     now = datetime.now(UTC)
     run_id = now.strftime("%Y%m%dT%H%M%SZ")
 
@@ -43,7 +43,7 @@ def ingest_sample(
     esearch = search_result["esearchresult"]
     pmids = esearch["idlist"]
 
-    # JSON bruto
+    # Raw JSON
     search_path = raw_dir / f"{run_id}_esearch.json"
     search_path.write_text(
         json.dumps(search_result, ensure_ascii=False, indent=2),
@@ -73,12 +73,12 @@ def ingest_sample(
 
     citations = []
 
-    # Sem PMIDs não há o que buscar: o EFetch com lista vazia retorna erro
+    # Without PMIDs there is nothing to fetch: EFetch with an empty list errors
     if pmids:
         # EFetch
         pubmed_xml = fetch_pubmed_citations(pmids)
 
-        # XML bruto
+        # Raw XML
         fetch_path = raw_dir / f"{run_id}_efetch.xml"
         fetch_path.write_text(pubmed_xml, encoding="utf-8")
 
@@ -95,7 +95,7 @@ def ingest_sample(
         # Parsing
         citations = parse_pubmed_xml(pubmed_xml)
 
-    # SQLite: cria/abre, grava e fecha
+    # SQLite: create/open, save and close
     with closing(connect_database(db_path)) as connection:
         create_tables(connection)
         save_ingestion(connection, run, snapshots, citations)
@@ -113,22 +113,22 @@ def ingest_sample(
 def print_summary(summary: dict) -> None:
     run = summary["run"]
 
-    print(f"Execução:   {run['run_id']}")
-    print(f"Fonte:      {run['source']}")
-    print(f"Variante:   {run['query_variant']} (v{run['query_version']})")
-    print(f"Resultados: {run['total_results']} encontrados")
-    print(f"Amostra:    {run['total_retrieved']} PMIDs recuperados")
-    print(f"Citações:   {summary['citations_saved']} gravadas")
+    print(f"Run:       {run['run_id']}")
+    print(f"Source:    {run['source']}")
+    print(f"Variant:   {run['query_variant']} (v{run['query_version']})")
+    print(f"Results:   {run['total_results']} found")
+    print(f"Sample:    {run['total_retrieved']} PMIDs retrieved")
+    print(f"Citations: {summary['citations_saved']} saved")
 
-    print("Arquivos brutos:")
+    print("Raw files:")
 
     for path in summary["raw_files"]:
         print(f"  {path}")
 
-    print(f"Banco: {summary['db_path']}")
+    print(f"Database: {summary['db_path']}")
 
     for table, total in summary["db_totals"].items():
-        print(f"  {table}: {total} linha(s)")
+        print(f"  {table}: {total} row(s)")
 
 
 def main() -> None:

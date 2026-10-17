@@ -11,8 +11,13 @@ NCBI_EMAIL = os.getenv("NCBI_EMAIL")
 NCBI_API_KEY = os.getenv("NCBI_API_KEY")
 OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 
+CROSSREF_MAILTO = os.getenv(
+    "CROSSREF_MAILTO",
+    NCBI_EMAIL,
+)
+
 if not NCBI_EMAIL:
-    raise RuntimeError("Defina NCBI_EMAIL no arquivo .env")
+    raise RuntimeError("Set NCBI_EMAIL in the .env file")
 
 RAW_PUBMED_DIR = PROJECT_ROOT / "data" / "raw" / "pubmed"
 RAW_CROSSREF_DIR = PROJECT_ROOT / "data" / "raw" / "crossref"

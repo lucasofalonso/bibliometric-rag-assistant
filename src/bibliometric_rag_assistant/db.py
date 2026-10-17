@@ -5,7 +5,12 @@ from pathlib import Path
 
 from bibliometric_rag_assistant.config import DB_PATH
 
-TABLES = ("ingestion_runs", "raw_snapshots", "citations")
+TABLES = (
+    "ingestion_runs",
+    "raw_snapshots",
+    "citations",
+    "citation_enrichments",
+)
 
 
 def connect_database(db_path: str | Path = DB_PATH) -> sqlite3.Connection:
@@ -59,6 +64,30 @@ def create_tables(connection: sqlite3.Connection) -> None:
 
             FOREIGN KEY (run_id)
                 REFERENCES ingestion_runs (run_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS citation_enrichments (
+            run_id TEXT NOT NULL,
+            pmid TEXT NOT NULL,
+            source TEXT NOT NULL,
+            doi TEXT,
+            retrieved_at TEXT NOT NULL,
+            status TEXT NOT NULL,
+            raw_json TEXT,
+            normalized_json TEXT,
+
+            PRIMARY KEY (run_id, pmid, source),
+
+            FOREIGN KEY (run_id, pmid)
+                REFERENCES citations (run_id, pmid),
+
+            CHECK (
+                status IN (
+                    'success',
+                    'missing_doi',
+                    'not_found'
+                )
+            )
         );
         """
     )
@@ -177,6 +206,50 @@ def insert_citations(
     )
 
 
+def dumps_or_none(value) -> str | None:
+    # missing_doi and not_found have no response or record: store NULL
+    if value is None:
+        return None
+
+    return json.dumps(value, ensure_ascii=False)
+
+
+def insert_citation_enrichments(
+    connection: sqlite3.Connection,
+    enrichments: list[dict],
+) -> None:
+    rows = [
+        (
+            enrichment["run_id"],
+            enrichment["pmid"],
+            enrichment["source"],
+            enrichment.get("doi"),
+            enrichment["retrieved_at"],
+            enrichment["status"],
+            dumps_or_none(enrichment.get("raw")),
+            dumps_or_none(enrichment.get("normalized")),
+        )
+        for enrichment in enrichments
+    ]
+
+    connection.executemany(
+        """
+        INSERT INTO citation_enrichments (
+            run_id,
+            pmid,
+            source,
+            doi,
+            retrieved_at,
+            status,
+            raw_json,
+            normalized_json
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        rows,
+    )
+
+
 def save_ingestion(
     connection: sqlite3.Connection,
     run: dict,
@@ -197,6 +270,97 @@ def save_ingestion(
         raise
 
 
+def save_citation_enrichments(
+    connection: sqlite3.Connection,
+    enrichments: list[dict],
+) -> None:
+    try:
+        insert_citation_enrichments(connection, enrichments)
+
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+
+
+def get_latest_run_id(connection: sqlite3.Connection) -> str | None:
+    row = connection.execute(
+        """
+        SELECT run_id
+        FROM ingestion_runs
+        ORDER BY retrieved_at DESC
+        LIMIT 1
+        """
+    ).fetchone()
+
+    return row[0] if row else None
+
+
+def load_citations(
+    connection: sqlite3.Connection,
+    run_id: str,
+) -> list[dict]:
+    cursor = connection.execute(
+        """
+        SELECT run_id, pmid, doi, title
+        FROM citations
+        WHERE run_id = ?
+        ORDER BY pmid
+        """,
+        (run_id,),
+    )
+    columns = [description[0] for description in cursor.description]
+
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def get_enriched_pmids(
+    connection: sqlite3.Connection,
+    run_id: str,
+    source: str,
+) -> set[str]:
+    rows = connection.execute(
+        """
+        SELECT pmid
+        FROM citation_enrichments
+        WHERE run_id = ? AND source = ?
+        """,
+        (run_id, source),
+    ).fetchall()
+
+    return {row[0] for row in rows}
+
+
+def load_enrichment_gaps(
+    connection: sqlite3.Connection,
+    run_id: str,
+    source: str,
+) -> list[dict]:
+    # Citations the source could not enrich (no DOI or 404),
+    # candidates to be complemented by another source
+    cursor = connection.execute(
+        """
+        SELECT
+            enrichments.status,
+            citations.pmid,
+            citations.doi,
+            citations.title
+        FROM citation_enrichments AS enrichments
+        JOIN citations
+            ON citations.run_id = enrichments.run_id
+            AND citations.pmid = enrichments.pmid
+        WHERE enrichments.run_id = ?
+        AND enrichments.source = ?
+        AND enrichments.status <> 'success'
+        ORDER BY enrichments.status, citations.pmid
+        """,
+        (run_id, source),
+    )
+    columns = [description[0] for description in cursor.description]
+
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
 def count_rows(connection: sqlite3.Connection) -> dict[str, int]:
     return {
         table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
@@ -209,10 +373,10 @@ def main() -> None:
         create_tables(connection)
         counts = count_rows(connection)
 
-    print(f"Banco: {DB_PATH}")
+    print(f"Database: {DB_PATH}")
 
     for table, total in counts.items():
-        print(f"  {table}: {total} linha(s)")
+        print(f"  {table}: {total} row(s)")
 
 
 if __name__ == "__main__":
