@@ -1,7 +1,7 @@
 """Ingest a PubMed sample and store it in the local SQLite database.
 
 Usage:
-    uv run python scripts/ingest_sample.py
+    uv run python scripts/legacy/ingest_sample.py
 """
 
 import json
@@ -10,16 +10,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from bibliometric_rag_assistant.config import DB_PATH, RAW_PUBMED_DIR
-from bibliometric_rag_assistant.db import (
-    connect_database,
-    count_rows,
-    create_tables,
-    save_ingestion,
-)
 from bibliometric_rag_assistant.ingestion.pubmed import (
     fetch_pubmed_citations,
     parse_pubmed_xml,
     search_pubmed,
+)
+from bibliometric_rag_assistant.legacy.db import (
+    connect_database,
+    count_rows,
+    create_tables,
+    save_ingestion,
 )
 from bibliometric_rag_assistant.search_strategy import (
     PUBMED_ACTIVE_VARIANT,

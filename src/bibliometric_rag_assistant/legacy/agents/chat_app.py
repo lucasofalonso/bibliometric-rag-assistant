@@ -2,7 +2,11 @@ import json
 
 import gradio as gr
 
-from bibliometric_rag_assistant.agents.typed_agent import TOOL_LABELS, instructions, run_agent
+from bibliometric_rag_assistant.legacy.agents.typed_agent import (
+    TOOL_LABELS,
+    instructions,
+    run_agent,
+)
 
 
 def format_tool_call(entry: dict) -> gr.ChatMessage:

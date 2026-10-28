@@ -1,8 +1,8 @@
 """Enrich the citations of a PubMed run with Crossref metadata.
 
 Usage:
-    uv run python scripts/enrich_crossref_sample.py
-    uv run python scripts/enrich_crossref_sample.py --run-id 20261016T120000Z
+    uv run python scripts/legacy/enrich_crossref_sample.py
+    uv run python scripts/legacy/enrich_crossref_sample.py --run-id 20261016T120000Z
 
 Without --run-id, the most recent run is used. Citations already enriched
 are skipped, so running it again resumes an interrupted execution.
@@ -17,7 +17,12 @@ from pathlib import Path
 import httpx
 
 from bibliometric_rag_assistant.config import DB_PATH, RAW_CROSSREF_DIR
-from bibliometric_rag_assistant.db import (
+from bibliometric_rag_assistant.ingestion.crossref import (
+    check_missing_dois,
+    fetch_crossref_work,
+    parse_crossref_work,
+)
+from bibliometric_rag_assistant.legacy.db import (
     connect_database,
     count_rows,
     create_tables,
@@ -26,11 +31,6 @@ from bibliometric_rag_assistant.db import (
     load_citations,
     load_enrichment_gaps,
     save_citation_enrichments,
-)
-from bibliometric_rag_assistant.ingestion.crossref import (
-    check_missing_dois,
-    fetch_crossref_work,
-    parse_crossref_work,
 )
 
 CROSSREF_SOURCE = "crossref"
@@ -49,7 +49,7 @@ def enrich_crossref_sample(
 
         if run_id is None:
             raise RuntimeError(
-                "No run in the database: run scripts/ingest_sample.py first"
+                "No run in the database: run scripts/legacy/ingest_sample.py first"
             )
 
         # Citations of the run, minus those already enriched

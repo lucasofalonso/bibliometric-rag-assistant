@@ -51,9 +51,11 @@ def fetch_pubmed_citations(pmids: list[str]) -> str:
     if NCBI_API_KEY:
         params["api_key"] = NCBI_API_KEY
 
-    response = client.get(
+    # POST keeps long PMID lists out of the URL: NCBI recommends it
+    # above about 200 UIDs, and ESearch can return up to 10,000
+    response = client.post(
         f"{EUTILS_BASE_URL}/efetch.fcgi",
-        params=params,
+        data=params,
     )
     response.raise_for_status()
 
